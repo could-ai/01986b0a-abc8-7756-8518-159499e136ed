@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/password_entry.dart';
 
 class AddEditPage extends StatefulWidget {
   final PasswordEntry? entry;
-  final int? index;
 
-  const AddEditPage({Key? key, this.entry, this.index}) : super(key: key);
+  const AddEditPage({super.key, this.entry});
 
   @override
-  _AddEditPageState createState() => _AddEditPageState();
+  State<AddEditPage> createState() => _AddEditPageState();
 }
 
 class _AddEditPageState extends State<AddEditPage> {
@@ -18,13 +17,18 @@ class _AddEditPageState extends State<AddEditPage> {
   late final TextEditingController _usernameController;
   late final TextEditingController _passwordController;
   late final TextEditingController _notesController;
+  bool _isLoading = false;
+
+  final _supabase = Supabase.instance.client;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.entry?.title ?? '');
-    _usernameController = TextEditingController(text: widget.entry?.username ?? '');
-    _passwordController = TextEditingController(text: widget.entry?.password ?? '');
+    _usernameController =
+        TextEditingController(text: widget.entry?.username ?? '');
+    _passwordController =
+        TextEditingController(text: widget.entry?.password ?? '');
     _notesController = TextEditingController(text: widget.entry?.notes ?? '');
   }
 
@@ -37,21 +41,57 @@ class _AddEditPageState extends State<AddEditPage> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
-      final box = Hive.box<PasswordEntry>('passwords');
-      final newEntry = PasswordEntry(
-        title: _titleController.text,
-        username: _usernameController.text,
-        password: _passwordController.text,
-        notes: _notesController.text,
-      );
-      if (widget.entry != null && widget.index != null) {
-        box.putAt(widget.index!, newEntry);
-      } else {
-        box.add(newEntry);
+      setState(() {
+        _isLoading = true;
+      });
+
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not authenticated')),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       }
-      Navigator.pop(context);
+
+      final data = {
+        'title': _titleController.text,
+        'username': _usernameController.text,
+        'password': _passwordController.text,
+        'notes': _notesController.text,
+        'user_id': user.id,
+      };
+
+      try {
+        if (widget.entry != null) {
+          // Update existing entry
+          await _supabase
+              .from('password_entries')
+              .update(data)
+              .match({'id': widget.entry!.id});
+        } else {
+          // Insert new entry
+          await _supabase.from('password_entries').insert(data);
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Entry saved successfully!')),
+        );
+        Navigator.of(context).pop(true); // Return true to indicate success
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving entry: $e')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -70,17 +110,20 @@ class _AddEditPageState extends State<AddEditPage> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Title'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter a title' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter a title' : null,
               ),
               TextFormField(
                 controller: _usernameController,
                 decoration: const InputDecoration(labelText: 'Username'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter a username' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter a username' : null,
               ),
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
-                validator: (value) => value == null || value.isEmpty ? 'Enter a password' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Enter a password' : null,
               ),
               TextFormField(
                 controller: _notesController,
@@ -89,8 +132,8 @@ class _AddEditPageState extends State<AddEditPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _save,
-                child: const Text('Save'),
+                onPressed: _isLoading ? null : _save,
+                child: Text(_isLoading ? 'Saving...' : 'Save'),
               ),
             ],
           ),
