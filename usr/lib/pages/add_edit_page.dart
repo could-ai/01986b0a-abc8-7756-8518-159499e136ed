@@ -77,14 +77,18 @@ class _AddEditPageState extends State<AddEditPage> {
           // Insert new entry
           await _supabase.from('password_entries').insert(data);
         }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Entry saved successfully!')),
-        );
-        Navigator.of(context).pop(true); // Return true to indicate success
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Entry saved successfully!')),
+          );
+          Navigator.of(context).pop(true); // Return true to indicate success
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving entry: $e')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving entry: $e')),
+          );
+        }
       } finally {
         if (mounted) {
           setState(() {
@@ -113,18 +117,21 @@ class _AddEditPageState extends State<AddEditPage> {
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Enter a title' : null,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _usernameController,
                 decoration: const InputDecoration(labelText: 'Username'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Enter a username' : null,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Password'),
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Enter a password' : null,
               ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _notesController,
                 decoration: const InputDecoration(labelText: 'Notes'),

@@ -11,7 +11,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final Future<List<PasswordEntry>> _passwordsFuture;
+  late Future<List<PasswordEntry>> _passwordsFuture;
   final _supabase = Supabase.instance.client;
 
   @override
@@ -26,12 +26,16 @@ class _HomePageState extends State<HomePage> {
           .from('password_entries')
           .select()
           .order('created_at', ascending: false);
+      
+      // The response is already a List<Map<String, dynamic>>
       final data = response as List;
-      return data.map((e) => PasswordEntry.fromMap(e)).toList();
+      return data.map((map) => PasswordEntry.fromMap(map)).toList();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching passwords: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching passwords: $e')),
+        );
+      }
       return [];
     }
   }
@@ -40,17 +44,19 @@ class _HomePageState extends State<HomePage> {
     try {
       await _supabase.from('password_entries').delete().match({'id': id});
       setState(() {
-        // Re-fetch passwords after deletion
-        // A better approach for larger apps would be to remove the item from the local list
         _passwordsFuture = _fetchPasswords();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Entry deleted successfully')),
-      );
+      if(mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Entry deleted successfully')),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting entry: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting entry: $e')),
+        );
+      }
     }
   }
 
@@ -64,7 +70,9 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await _supabase.auth.signOut();
-              context.go('/login');
+              if (mounted) {
+                context.go('/login');
+              }
             },
           ),
         ],
@@ -99,16 +107,17 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                   onTap: () async {
-                    // Navigate to edit page and refresh list on return
-                    final result = await context.push<bool>('/edit', extra: entry);
-                    if (result == true) {
+                    final result = await GoRouter.of(context).push<bool>('/edit', extra: entry);
+                    if (result == true && mounted) {
                       setState(() {
                         _passwordsFuture = _fetchPasswords();
                       });
                     }
                   },
                   onLongPress: () {
-                    _deleteEntry(entry.id!);
+                    if (entry.id != null) {
+                      _deleteEntry(entry.id!);
+                    }
                   },
                 ),
               );
@@ -119,9 +128,8 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
-          // Navigate to add page and refresh list on return
-          final result = await context.push<bool>('/add');
-          if (result == true) {
+          final result = await GoRouter.of(context).push<bool>('/add');
+          if (result == true && mounted) {
             setState(() {
               _passwordsFuture = _fetchPasswords();
             });
