@@ -1,3 +1,4 @@
+import 'package:couldai_user_app/models/password_entry.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -44,8 +45,8 @@ final _router = GoRouter(
       path: '/edit',
       name: 'edit',
       builder: (context, state) {
-        final entryId = int.parse(state.uri.queryParameters['id']!);
-        return AddEditPage(entryId: entryId);
+        final entry = state.extra as PasswordEntry;
+        return AddEditPage(entry: entry);
       },
     ),
   ],
@@ -61,30 +62,30 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
       theme: ThemeData.dark().copyWith(
-        primaryColor: Colors.blue,
-        scaffoldBackgroundColor: Colors.blue, // A more standard blue background
+        primaryColor: Colors.red,
+        scaffoldBackgroundColor: Colors.red.shade900, // Dark red background
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.blue.shade800, // Darker blue for app bar
+          backgroundColor: Colors.red.shade800, // Darker red for app bar
           elevation: 0,
         ),
         cardTheme: CardTheme(
-          color: Colors.blue.shade700, // Darker cards for contrast
+          color: Colors.red.shade700, // Darker cards for contrast
           elevation: 4,
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.lightBlueAccent,
-          foregroundColor: Colors.black,
+          backgroundColor: Colors.redAccent,
+          foregroundColor: Colors.white,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.lightBlueAccent,
-            foregroundColor: Colors.black,
+            backgroundColor: Colors.redAccent,
+            foregroundColor: Colors.white,
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.blue.shade700,
+          fillColor: Colors.red.shade800,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
