@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/password_entry.dart';
+import 'package:couldai_user_app/models/password_entry.dart';
 
 class AddEditPage extends StatefulWidget {
   final PasswordEntry? entry;
@@ -67,12 +67,13 @@ class _AddEditPageState extends State<AddEditPage> {
       };
 
       try {
-        if (widget.entry != null) {
+        final entryId = widget.entry?.id;
+        if (entryId != null) {
           // Update existing entry
           await _supabase
               .from('password_entries')
               .update(data)
-              .match({'id': widget.entry!.id});
+              .match({'id': entryId});
         } else {
           // Insert new entry
           await _supabase.from('password_entries').insert(data);
